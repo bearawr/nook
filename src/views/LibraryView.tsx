@@ -12,9 +12,7 @@ export default function LibraryView() {
     const [books, setBooks] = useState<Book[]>([]);
     const openBook = useAppStore((s) => s.openBook);
 
-    useEffect(() => {
-        loadBooks();
-    }, []);
+    useEffect(() => { loadBooks(); }, []);
 
     async function loadBooks() {
         const db = await getDb();
@@ -34,7 +32,7 @@ export default function LibraryView() {
             <button onClick={addBook}>+ Add Book</button>
             <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
                 {books.map((book) => (
-                    <button key={book.id} onClick={() => openBook(book.id)}>
+                    <button key={book.id} onClick={() => openBook(book.id, book.title)}>
                     {book.title}
                     </button>
                 ))}
