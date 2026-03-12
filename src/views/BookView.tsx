@@ -1,16 +1,15 @@
+import React, { useEffect, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Typography from "@tiptap/extension-typography";
-import { useAppStore } from "../store";
-import { useEffect, useState } from "react";
-import React from "react";
-import {Table as TiptapTable } from "@tiptap/extension-table";
+import { Table as TiptapTable } from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import ImageResize from "tiptap-extension-resize-image";
-import "../App.css";
+import { useAppStore } from "../store";
 import { getDb } from "../db";
+import "../App.css";
 
 interface TocEntry {
   id: string;
@@ -26,14 +25,13 @@ export default function BookView() {
   const prevPage = useAppStore((s) => s.prevPage);
   const goToPage = useAppStore((s) => s.goToPage);
   const bookTitle = useAppStore((s) => s.currentBookTitle);
+  const currentBookId = useAppStore((s) => s.currentBookId);
   const tocOpen = useAppStore((s) => s.tocOpen);
   const toggleToc = useAppStore((s) => s.toggleToc);
 
   const [jumpInput, setJumpInput] = useState("");
   const [tocEntries, setTocEntries] = useState<TocEntry[]>([]);
   const [expandedChapters, setExpandedChapters] = useState<string[]>([]);
-
-  const currentBookId = useAppStore((s) => s.currentBookId);
 
   const isCoverPage = currentPage === 1;
   const leftPageNum = currentPage;
@@ -43,7 +41,7 @@ export default function BookView() {
     extensions: [
       StarterKit,
       Typography,
-      TiptapTable.configure({ resizable: true }),
+      (TiptapTable as any).configure({ resizable: true }),
       TableRow,
       TableCell,
       TableHeader,
@@ -69,7 +67,6 @@ export default function BookView() {
   }
 
   function scrollToHeading(text: string) {
-    // Find the heading in the editor DOM and scroll to it
     const editorEl = document.querySelector(".ProseMirror");
     if (!editorEl) return;
     const headings = editorEl.querySelectorAll("h1, h2, h3");
@@ -90,7 +87,7 @@ export default function BookView() {
   function insertTable() {
     editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
   }
-  
+
   async function insertImage() {
     const input = document.createElement("input");
     input.type = "file";
@@ -108,7 +105,6 @@ export default function BookView() {
     input.click();
   }
 
-  // Arrow key navigation
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.target as HTMLElement).closest(".ProseMirror")) return;
@@ -128,7 +124,6 @@ export default function BookView() {
     }
   }
 
-  // Render TOC — H1s are chapters, H2/H3 are nested under their parent H1
   function renderToc() {
     const items: React.JSX.Element[] = [];
     let currentChapterId: string | null = null;
@@ -138,18 +133,12 @@ export default function BookView() {
         currentChapterId = entry.id;
         const isExpanded = expandedChapters.includes(entry.id);
         items.push(
-          <div key={entry.id} style={{ marginBottom: "6px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <button
-                onClick={() => scrollToHeading(entry.text)}
-                style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: "4px 6px", fontSize: "14px", fontWeight: "bold" }}
-              >
+          <div key={entry.id} className="toc-chapter">
+            <div className="toc-chapter-row">
+              <button className="toc-chapter-btn" onClick={() => scrollToHeading(entry.text)}>
                 {entry.text}
               </button>
-              <button
-                onClick={() => toggleExpand(entry.id)}
-                style={{ fontSize: "10px", background: "none", border: "none", cursor: "pointer", color: "#aaa" }}
-              >
+              <button className="toc-expand-btn" onClick={() => toggleExpand(entry.id)}>
                 {isExpanded ? "▲" : "▼"}
               </button>
             </div>
@@ -160,11 +149,13 @@ export default function BookView() {
           items.push(
             <div
               key={entry.id}
-              style={{ paddingLeft: entry.level === 2 ? "16px" : "28px", marginBottom: "4px" }}
+              className="toc-subheading"
+              style={{ paddingLeft: entry.level === 2 ? "16px" : "28px" }}
             >
               <button
+                className="toc-subheading-btn"
+                style={{ fontSize: entry.level === 2 ? "13px" : "12px" }}
                 onClick={() => scrollToHeading(entry.text)}
-                style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: "2px 6px", fontSize: entry.level === 2 ? "13px" : "12px", color: "#555" }}
               >
                 {entry.text}
               </button>
@@ -174,29 +165,20 @@ export default function BookView() {
       }
     }
 
-    return items.length > 0 ? items : <p style={{ color: "#aaa", fontSize: "13px" }}>Type # to create a chapter.</p>;
+    return items.length > 0
+      ? items
+      : <p className="toc-empty">Type # to create a chapter.</p>;
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+    <div className="book-view">
 
       {/* Top Bar */}
-      <div style={{ padding: "8px 16px", borderBottom: "1px solid #ccc", display: "flex", alignItems: "center", gap: "12px" }}>
+      <div className="book-topbar">
         <button onClick={goHome}>← Home</button>
         <button onClick={toggleToc}>🔖 TOC</button>
-        <button onClick={insertTable}>⊞ Table</button>
-        {editor?.isActive("table") && (
-            <>
-                <button onClick={() => editor.chain().focus().addRowAfter().run()}>+ Row</button>
-                <button onClick={() => editor.chain().focus().addColumnAfter().run()}>+ Col</button>
-                <button onClick={() => editor.chain().focus().deleteRow().run()}>− Row</button>
-                <button onClick={() => editor.chain().focus().deleteColumn().run()}>− Col</button>
-                <button onClick={() => editor.chain().focus().deleteTable().run()}>✕ Table</button>
-            </>
-         )}
-        <button onClick={insertImage}>🖼 Image</button>
-        <span style={{ fontWeight: "bold" }}>{bookTitle}</span>
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
+        <span className="book-topbar-title">{bookTitle}</span>
+        <div className="book-topbar-nav">
           <button onClick={prevPage} disabled={currentPage === 1}>←</button>
           <span>Page {currentPage} of {totalPages}</span>
           <button onClick={nextPage} disabled={currentPage === totalPages}>→</button>
@@ -205,59 +187,55 @@ export default function BookView() {
             onChange={(e) => setJumpInput(e.target.value)}
             onKeyDown={handleJump}
             placeholder="Go to page..."
-            style={{ width: "100px", padding: "4px 8px" }}
           />
         </div>
       </div>
 
       {/* Main Area */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div className="book-main">
 
         {/* TOC Panel */}
         {tocOpen && (
-          <div style={{ width: "240px", borderRight: "1px solid #ccc", padding: "16px", overflowY: "auto", background: "#fafafa" }}>
-            <strong style={{ display: "block", marginBottom: "12px" }}>Table of Contents</strong>
+          <div className="toc-panel">
+            <strong>Table of Contents</strong>
             {renderToc()}
           </div>
         )}
 
         {/* Pages Area */}
-        <div style={{ flex: 1, overflow: "auto", background: "#e0e0e0", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "40px", gap: "24px" }}>
+        <div className="pages-area">
 
           {/* Cover Page */}
           {isCoverPage && (
-            <div style={{ width: "500px", minHeight: "700px", background: "white", padding: "60px 48px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-              {isCoverPage && (
-                <div style={{ width: "500px", minHeight: "700px", background: "white", padding: "60px 48px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-                    <h1
-                    contentEditable
-                    suppressContentEditableWarning
-                    onBlur={async (e) => {
-                        const newTitle = e.currentTarget.textContent || "Untitled Book";
-                        const db = await getDb();
-                        await db.execute("UPDATE books SET title = ? WHERE id = ?", [newTitle, currentBookId]);
-                        useAppStore.getState().openBook(currentBookId!, newTitle);
-                    }}
-                    style={{ color: "black", fontSize: "32px", textAlign: "center", outline: "none", cursor: "text", borderBottom: "1px dashed #ccc", minWidth: "200px", padding: "4px 8px" }}
-                    >
-                    {bookTitle}
-                    </h1>
-                </div>
-                )}
-              <p style={{ color: "#aaa", marginTop: "16px" }}>Page 1</p>
+            <div className="cover-page">
+              <h1
+                contentEditable
+                suppressContentEditableWarning
+                className="cover-title"
+                onBlur={async (e) => {
+                  if (!currentBookId) return;
+                  const newTitle = e.currentTarget.textContent || "Untitled Book";
+                  const db = await getDb();
+                  await db.execute("UPDATE books SET title = ? WHERE id = ?", [newTitle, currentBookId]);
+                  useAppStore.getState().openBook(currentBookId, newTitle);
+                }}
+              >
+                {bookTitle}
+              </h1>
+              <p className="cover-hint">Click title to edit</p>
             </div>
           )}
 
           {/* Spread View */}
           {!isCoverPage && (
             <>
-              <div style={{ width: "500px", minHeight: "700px", background: "white", padding: "60px 48px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", position: "relative" }}>
-                <div style={{ position: "absolute", top: "16px", right: "24px", color: "#aaa", fontSize: "13px" }}>{leftPageNum}</div>
+              <div className="spread-page">
+                <span className="page-number">{leftPageNum}</span>
                 <EditorContent editor={editor} />
               </div>
-              <div style={{ width: "500px", minHeight: "700px", background: "white", padding: "60px 48px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", position: "relative" }}>
-                <div style={{ position: "absolute", top: "16px", right: "24px", color: "#aaa", fontSize: "13px" }}>{rightPageNum}</div>
-                <p style={{ color: "#aaa" }}>Next page...</p>
+              <div className="spread-page">
+                <span className="page-number">{rightPageNum}</span>
+                <p className="page-placeholder">Next page...</p>
               </div>
             </>
           )}
