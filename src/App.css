@@ -95,6 +95,40 @@ button {
   margin-right: 5px;
 }
 
+/* Table styles */
+.ProseMirror {
+    color: #000000;
+  }
+
+.ProseMirror table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+  }
+  
+  .ProseMirror table td,
+  .ProseMirror table th {
+    border: 1px solid #999;
+    padding: 6px 12px;
+    min-width: 80px;
+  }
+  
+  .ProseMirror table th {
+    background: #f0f0f0;
+    font-weight: bold;
+  }
+
+  .ProseMirror img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    cursor: pointer;
+  }
+  
+  .ProseMirror img.ProseMirror-selectednode {
+    outline: 2px solid #4A90D9;
+  }
+
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f6f6f6;

@@ -4,6 +4,12 @@ import Typography from "@tiptap/extension-typography";
 import { useAppStore } from "../store";
 import { useEffect, useState } from "react";
 import React from "react";
+import {Table as TiptapTable } from "@tiptap/extension-table";
+import TableRow from "@tiptap/extension-table-row";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import ImageResize from "tiptap-extension-resize-image";
+import "../App.css";
 
 interface TocEntry {
   id: string;
@@ -31,7 +37,15 @@ export default function BookView() {
   const rightPageNum = currentPage + 1;
 
   const editor = useEditor({
-    extensions: [StarterKit, Typography],
+    extensions: [
+      StarterKit,
+      Typography,
+      TiptapTable.configure({ resizable: true }),
+      TableRow,
+      TableCell,
+      TableHeader,
+      ImageResize,
+    ],
     content: "<p>Start writing...</p>",
     onUpdate({ editor }) {
       buildToc(editor);
@@ -68,6 +82,27 @@ export default function BookView() {
     setExpandedChapters((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
     );
+  }
+
+  function insertTable() {
+    editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+  }
+  
+  async function insertImage() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png, image/jpeg";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        (editor?.chain().focus() as any).setImage({ src: base64 }).run();
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
   }
 
   // Arrow key navigation
@@ -146,6 +181,17 @@ export default function BookView() {
       <div style={{ padding: "8px 16px", borderBottom: "1px solid #ccc", display: "flex", alignItems: "center", gap: "12px" }}>
         <button onClick={goHome}>← Home</button>
         <button onClick={toggleToc}>🔖 TOC</button>
+        <button onClick={insertTable}>⊞ Table</button>
+        {editor?.isActive("table") && (
+            <>
+                <button onClick={() => editor.chain().focus().addRowAfter().run()}>+ Row</button>
+                <button onClick={() => editor.chain().focus().addColumnAfter().run()}>+ Col</button>
+                <button onClick={() => editor.chain().focus().deleteRow().run()}>− Row</button>
+                <button onClick={() => editor.chain().focus().deleteColumn().run()}>− Col</button>
+                <button onClick={() => editor.chain().focus().deleteTable().run()}>✕ Table</button>
+            </>
+         )}
+        <button onClick={insertImage}>🖼 Image</button>
         <span style={{ fontWeight: "bold" }}>{bookTitle}</span>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
           <button onClick={prevPage} disabled={currentPage === 1}>←</button>
