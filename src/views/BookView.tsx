@@ -10,6 +10,7 @@ import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import ImageResize from "tiptap-extension-resize-image";
 import "../App.css";
+import { getDb } from "../db";
 
 interface TocEntry {
   id: string;
@@ -31,6 +32,8 @@ export default function BookView() {
   const [jumpInput, setJumpInput] = useState("");
   const [tocEntries, setTocEntries] = useState<TocEntry[]>([]);
   const [expandedChapters, setExpandedChapters] = useState<string[]>([]);
+
+  const currentBookId = useAppStore((s) => s.currentBookId);
 
   const isCoverPage = currentPage === 1;
   const leftPageNum = currentPage;
@@ -224,7 +227,23 @@ export default function BookView() {
           {/* Cover Page */}
           {isCoverPage && (
             <div style={{ width: "500px", minHeight: "700px", background: "white", padding: "60px 48px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-              <h1 style={{ fontSize: "32px", textAlign: "center" }}>{bookTitle}</h1>
+              {isCoverPage && (
+                <div style={{ width: "500px", minHeight: "700px", background: "white", padding: "60px 48px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+                    <h1
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={async (e) => {
+                        const newTitle = e.currentTarget.textContent || "Untitled Book";
+                        const db = await getDb();
+                        await db.execute("UPDATE books SET title = ? WHERE id = ?", [newTitle, currentBookId]);
+                        useAppStore.getState().openBook(currentBookId!, newTitle);
+                    }}
+                    style={{ color: "black", fontSize: "32px", textAlign: "center", outline: "none", cursor: "text", borderBottom: "1px dashed #ccc", minWidth: "200px", padding: "4px 8px" }}
+                    >
+                    {bookTitle}
+                    </h1>
+                </div>
+                )}
               <p style={{ color: "#aaa", marginTop: "16px" }}>Page 1</p>
             </div>
           )}

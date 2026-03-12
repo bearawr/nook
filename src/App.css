@@ -129,6 +129,10 @@ button {
     outline: 2px solid #4A90D9;
   }
 
+  .ProseMirror:focus {
+    outline: none;
+  }
+
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f6f6f6;
