@@ -1,5 +1,6 @@
 import { useAppStore } from "./store";
 import LibraryView from "./views/LibraryView";
+import BookView from "./views/BookView";
 
 function App() {
   const currentView = useAppStore((s) => s.currentView);
@@ -7,7 +8,7 @@ function App() {
   return (
     <div>
       {currentView === "library" && <LibraryView />}
-      {currentView === "book" && <div>Book view coming soon</div>}
+      {currentView === "book" && <BookView />}
     </div>
   );
 }
