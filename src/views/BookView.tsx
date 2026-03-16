@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import PageEditor from "../components/PageEditor";
 import "../App.css";
 import { getActiveEditor } from "../editorRef";
+import { getOrCreatePage, prependBlocks } from "../db";
 
 interface TocEntry {
   id: string;
@@ -12,6 +13,7 @@ interface TocEntry {
 }
 
 export default function BookView() {
+  const [rightPageReloadKey, setRightPageReloadKey] = useState(0);
   const goHome = useAppStore((s) => s.goHome);
   const currentPage = useAppStore((s) => s.currentPage);
   const totalPages = useAppStore((s) => s.totalPages);
@@ -65,7 +67,7 @@ export default function BookView() {
   function insertTable() {
     getActiveEditor()?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
   }
-  
+
   async function insertImage() {
     const input = document.createElement("input");
     input.type = "file";
@@ -155,14 +157,13 @@ export default function BookView() {
       <div className="book-topbar">
         <button onClick={goHome}>← Home</button>
         <button onClick={insertTable}>⊞ Table</button>
-`       <button onClick={insertImage}>🖼 Image</button>`
+        <button onClick={insertImage}>🖼 Image</button>
         <button onClick={toggleToc}>🔖 TOC</button>
-        <button onClick={insertTable}>⊞ Table</button>
         <span className="book-topbar-title">{bookTitle}</span>
         <div className="book-topbar-nav">
           <button onClick={prevPage} disabled={currentPage === 1}>←</button>
           <span>Page {currentPage} of {totalPages}</span>
-          <button onClick={nextPage} disabled={false}>→</button>
+          <button onClick={nextPage}>→</button>
           <input
             value={jumpInput}
             onChange={(e) => setJumpInput(e.target.value)}
@@ -203,7 +204,7 @@ export default function BookView() {
               >
                 {bookTitle}
               </h1>
-              <p className="cover-hint"></p>
+              <p className="cover-hint">Click title to edit</p>
             </div>
           )}
 
@@ -213,24 +214,36 @@ export default function BookView() {
               <div className="spread-page">
                 <span className="page-number">{leftPageNum}</span>
                 <div className="page-content">
-                <PageEditor
+                  <PageEditor
                     key={`page-${leftPageNum}`}
                     bookId={currentBookId}
                     pageNumber={leftPageNum}
                     onUpdate={buildToc}
-                    onOverflow={nextPage}
-                    />
+                    onOverflow={async (overflowBlocks) => {
+                      console.log("Left page overflow, blocks:", overflowBlocks.length);
+                      const rightPageId = await getOrCreatePage(currentBookId, rightPageNum);
+                      console.log("Got rightPageId:", rightPageId);
+                      await prependBlocks(rightPageId, overflowBlocks);
+                      console.log("Prepended blocks, reloading right page");
+                      setRightPageReloadKey((k) => k + 1);
+                    }}
+                  />
                 </div>
               </div>
               <div className="spread-page">
                 <span className="page-number">{rightPageNum}</span>
                 <div className="page-content">
-                <PageEditor
-                    key={`page-${rightPageNum}`}
+                  <PageEditor
+                    key={`page-${rightPageNum}-${rightPageReloadKey}`}
                     bookId={currentBookId}
                     pageNumber={rightPageNum}
-                    onOverflow={nextPage}
-                    />
+                    onOverflow={async (overflowBlocks) => {
+                      console.log("Right page overflow, blocks:", overflowBlocks.length);
+                      const nextPageId = await getOrCreatePage(currentBookId, rightPageNum + 1);
+                      await prependBlocks(nextPageId, overflowBlocks);
+                      nextPage();
+                    }}
+                  />
                 </div>
               </div>
             </>
