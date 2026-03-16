@@ -1,15 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Typography from "@tiptap/extension-typography";
-import { Table as TiptapTable } from "@tiptap/extension-table";
-import TableRow from "@tiptap/extension-table-row";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
-import ImageResize from "tiptap-extension-resize-image";
 import { useAppStore } from "../store";
 import { getDb } from "../db";
+import PageEditor from "../components/PageEditor";
 import "../App.css";
+import { getActiveEditor } from "../editorRef";
 
 interface TocEntry {
   id: string;
@@ -37,25 +31,9 @@ export default function BookView() {
   const leftPageNum = currentPage;
   const rightPageNum = currentPage + 1;
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Typography,
-      (TiptapTable as any).configure({ resizable: true }),
-      TableRow,
-      TableCell,
-      TableHeader,
-      ImageResize,
-    ],
-    content: "<p>Start writing...</p>",
-    onUpdate({ editor }) {
-      buildToc(editor);
-    },
-  });
-
-  function buildToc(ed: any) {
+  function buildToc(editor: any) {
     const headings: TocEntry[] = [];
-    ed.state.doc.forEach((node: any) => {
+    editor.state.doc.forEach((node: any) => {
       if (node.type.name === "heading") {
         const text = node.textContent;
         const level = node.attrs.level;
@@ -85,9 +63,9 @@ export default function BookView() {
   }
 
   function insertTable() {
-    editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    getActiveEditor()?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
   }
-
+  
   async function insertImage() {
     const input = document.createElement("input");
     input.type = "file";
@@ -98,7 +76,7 @@ export default function BookView() {
       const reader = new FileReader();
       reader.onload = () => {
         const base64 = reader.result as string;
-        (editor?.chain().focus() as any).setImage({ src: base64 }).run();
+        (getActiveEditor()?.chain().focus() as any)?.setImage({ src: base64 }).run();
       };
       reader.readAsDataURL(file);
     };
@@ -176,12 +154,15 @@ export default function BookView() {
       {/* Top Bar */}
       <div className="book-topbar">
         <button onClick={goHome}>← Home</button>
+        <button onClick={insertTable}>⊞ Table</button>
+`       <button onClick={insertImage}>🖼 Image</button>`
         <button onClick={toggleToc}>🔖 TOC</button>
+        <button onClick={insertTable}>⊞ Table</button>
         <span className="book-topbar-title">{bookTitle}</span>
         <div className="book-topbar-nav">
           <button onClick={prevPage} disabled={currentPage === 1}>←</button>
           <span>Page {currentPage} of {totalPages}</span>
-          <button onClick={nextPage} disabled={currentPage === totalPages}>→</button>
+          <button onClick={nextPage} disabled={false}>→</button>
           <input
             value={jumpInput}
             onChange={(e) => setJumpInput(e.target.value)}
@@ -222,20 +203,35 @@ export default function BookView() {
               >
                 {bookTitle}
               </h1>
-              <p className="cover-hint">Click title to edit</p>
+              <p className="cover-hint"></p>
             </div>
           )}
 
           {/* Spread View */}
-          {!isCoverPage && (
+          {!isCoverPage && currentBookId && (
             <>
               <div className="spread-page">
                 <span className="page-number">{leftPageNum}</span>
-                <EditorContent editor={editor} />
+                <div className="page-content">
+                <PageEditor
+                    key={`page-${leftPageNum}`}
+                    bookId={currentBookId}
+                    pageNumber={leftPageNum}
+                    onUpdate={buildToc}
+                    onOverflow={nextPage}
+                    />
+                </div>
               </div>
               <div className="spread-page">
                 <span className="page-number">{rightPageNum}</span>
-                <p className="page-placeholder">Next page...</p>
+                <div className="page-content">
+                <PageEditor
+                    key={`page-${rightPageNum}`}
+                    bookId={currentBookId}
+                    pageNumber={rightPageNum}
+                    onOverflow={nextPage}
+                    />
+                </div>
               </div>
             </>
           )}

@@ -173,12 +173,12 @@ body {
 .pages-area {
   flex: 1;
   overflow: auto;
-  background: #e0e0e0;
+  background: #000000;
   display: flex;
   justify-content: center;
   align-items: flex-start;
   padding: 40px;
-  gap: 24px;
+  gap: 0px;
 }
 
 /* Cover Page */
@@ -229,4 +229,15 @@ body {
 
 .page-placeholder {
   color: #aaa;
+}
+
+/* Page Content */
+.page-content {
+  height: 600px;
+  overflow: hidden;
+}
+
+.page-content .ProseMirror {
+  height: 100%;
+  outline: none;
 }

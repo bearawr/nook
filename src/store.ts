@@ -32,24 +32,39 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentBookId: null,
   currentBookTitle: "",
   currentPage: 1,
-  totalPages: 6,
+  totalPages: 3,
   chapters: [],
   tocOpen: false,
 
   setView: (view) => set({ currentView: view }),
-  openBook: (id, title) => set({ currentView: "book", currentBookId: id, currentBookTitle: title, currentPage: 1, chapters: [], tocOpen: false }),
-  goHome: () => set({ currentView: "library", currentBookId: null, currentPage: 1, chapters: [], tocOpen: false }),
+  openBook: (id, title) => set({
+    currentView: "book",
+    currentBookId: id,
+    currentBookTitle: title,
+    currentPage: 1,
+    chapters: [],
+    tocOpen: false,
+  }),
+  goHome: () => set({ currentView: "library", currentBookId: null, currentPage: 1 }),
   goToPage: (page) => {
     const { totalPages } = get();
     if (page >= 1 && page <= totalPages) set({ currentPage: page });
   },
   nextPage: () => {
     const { currentPage, totalPages } = get();
-    if (currentPage < totalPages) set({ currentPage: currentPage + 1 });
+    // Cover (1) → first spread (2), then jump by 2
+    const next = currentPage === 1 ? 2 : currentPage + 2;
+    if (next <= totalPages) {
+      set({ currentPage: next });
+    } else {
+      // Create a new spread
+      set({ currentPage: next, totalPages: next + 1 });
+    }
   },
   prevPage: () => {
     const { currentPage } = get();
-    if (currentPage > 1) set({ currentPage: currentPage - 1 });
+    if (currentPage === 2) set({ currentPage: 1 });
+    else if (currentPage > 2) set({ currentPage: currentPage - 2 });
   },
   setTotalPages: (total) => set({ totalPages: total }),
   setChapters: (chapters) => set({ chapters }),
